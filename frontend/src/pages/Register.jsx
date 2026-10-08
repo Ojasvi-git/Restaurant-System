@@ -1,130 +1,160 @@
-import {Link} from "react-router-dom";
-import {
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  User,
-  Utensils,
-} from "lucide-react";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
+import toast from "react-hot-toast";
+
+import api from "../services/api";
 
 function Register() {
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
 
-        console.log("Register submitted");
-    };
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-    return (
-        <section className="flex min-h-[calc(100vh-72px)] items-center justify-center bg-gray-50 px-6 py-12">
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const { name, email, password, confirmPassword } = formData;
+
+    // Validation
+    if (!name || !email || !password || !confirmPassword) {
+      toast.error("Please fill all fields");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await api.post("/auth/register", {
+        name,
+        email,
+        password,
+      });
+
+      toast.success(
+        response.data.message || "Account created successfully!"
+      );
+
+      // Go to login page after successful registration
+      navigate("/login");
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      const message =
+        error.response?.data?.message ||
+        "Registration failed. Please try again.";
+
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
 
-        {/*  Heading */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gray-900 text-white">
-            <Utensils size={22} />
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
+
+          {/* Heading */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Create Account
+            </h1>
+
+            <p className="text-gray-500 mt-2">
+              Create your account to get started
+            </p>
           </div>
-
-          <h1 className="mt-5 text-3xl font-bold tracking-tight text-gray-900">
-            Create Account
-          </h1>
-
-          <p className="mt-2 text-sm text-gray-500">
-            Create your Restaurant Management account
-          </p>
-        </div>
-
-        {/* Registration */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm sm:p-8">
 
           <form onSubmit={handleSubmit} className="space-y-5">
 
             {/* Name */}
             <div>
-              <label
-                htmlFor="name"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Full Name
               </label>
 
-              <div className="relative">
-                <User
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-
-                <input
-                  id="name"
-                  type="text"
-                  placeholder="Enter your full name"
-                  className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
-                  required
-                />
-              </div>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Enter your full name"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+              />
             </div>
 
             {/* Email */}
             <div>
-              <label
-                htmlFor="email"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                Email Address
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
               </label>
 
-              <div className="relative">
-                <Mail
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
-                  required
-                />
-              </div>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+              />
             </div>
 
             {/* Password */}
             <div>
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
 
               <div className="relative">
-                <Lock
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-
                 <input
-                  id="password"
                   type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
                   placeholder="Create a password"
-                  className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-11 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
-                  required
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
                 />
 
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-700"
+                  onClick={() =>
+                    setShowPassword((prev) => !prev)
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
                   {showPassword ? (
-                    <EyeOff size={19} />
+                    <EyeOff size={20} />
                   ) : (
-                    <Eye size={19} />
+                    <Eye size={20} />
                   )}
                 </button>
               </div>
@@ -132,38 +162,31 @@ function Register() {
 
             {/* Confirm Password */}
             <div>
-              <label
-                htmlFor="confirmPassword"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Confirm Password
               </label>
 
               <div className="relative">
-                <Lock
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-
                 <input
-                  id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
                   placeholder="Confirm your password"
-                  className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-11 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
-                  required
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
                 />
 
                 <button
                   type="button"
                   onClick={() =>
-                    setShowConfirmPassword(!showConfirmPassword)
+                    setShowConfirmPassword((prev) => !prev)
                   }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
                   {showConfirmPassword ? (
-                    <EyeOff size={19} />
+                    <EyeOff size={20} />
                   ) : (
-                    <Eye size={19} />
+                    <Eye size={20} />
                   )}
                 </button>
               </div>
@@ -172,40 +195,45 @@ function Register() {
             {/* Register Button */}
             <button
               type="submit"
-              className="w-full rounded-lg bg-gray-900 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 active:scale-[0.99]"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-3 font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Create Account
+              {loading ? (
+                <>
+                  <Loader2
+                    size={20}
+                    className="animate-spin"
+                  />
+                  Creating Account...
+                </>
+              ) : (
+                "Create Account"
+              )}
             </button>
-
           </form>
 
           {/* Login */}
-          <div className="mt-6 border-t border-gray-100 pt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Already have an account?{" "}
-              <Link
-                to="/login"
-                className="font-semibold text-gray-900 hover:underline"
-              >
-                Login
-              </Link>
-            </p>
-          </div>
+          <p className="text-center text-sm text-gray-500 mt-6">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="font-medium text-gray-900 hover:underline"
+            >
+              Login
+            </Link>
+          </p>
 
-        </div>
-
-        {/* Back to Home */}
-        <div className="mt-6 text-center">
+          {/* Back Home */}
           <Link
             to="/"
-            className="text-sm text-gray-500 transition hover:text-gray-900"
+            className="mt-5 flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-900"
           >
-            ← Back to Home
+            <ArrowLeft size={16} />
+            Back to Home
           </Link>
         </div>
-
       </div>
-    </section>
+    </div>
   );
 }
 
