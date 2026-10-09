@@ -1,6 +1,12 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  ArrowLeft,
+} from "lucide-react";
 import toast from "react-hot-toast";
 
 import api from "../services/api";
@@ -8,7 +14,6 @@ import { useAuth } from "../context/AuthContext";
 
 function Login() {
   const navigate = useNavigate();
-
   const { login } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -31,38 +36,65 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.email || !formData.password) {
-      toast.error("Please fill all fields");
+    if (loading) return;
+
+    const email = formData.email.trim();
+
+    if (!email || !formData.password) {
+      toast.error("Please fill in all fields.");
       return;
     }
 
     try {
       setLoading(true);
 
-      const response = await api.post("/auth/login", formData);
+      const response = await api.post("/auth/login", {
+        email,
+        password: formData.password,
+      });
 
       const { token, user } = response.data;
 
-      // Save user and token in AuthContext
+      if (!token || !user) {
+        throw new Error("Invalid login response from server.");
+      }
+
+      const allowedRoles = [
+        "customer",
+        "waiter",
+        "chef",
+        "admin",
+      ];
+
+      if (!allowedRoles.includes(user.role)) {
+        toast.error(
+          "Your account role is invalid. Please contact admin."
+        );
+        return;
+      }
+
+      // Save user and token using AuthContext
       login(user, token);
 
       toast.success("Login successful!");
 
-      // Role based navigation
-      if (user.role === "admin") {
-        navigate("/admin/dashboard");
-      } else if (user.role === "counter") {
-        navigate("/counter/dashboard");
-      } else if (user.role === "chef") {
-        navigate("/chef/dashboard");
-      } else {
-        navigate("/user/dashboard");
-      }
+      // Redirect according to the user's role
+      const dashboardRoutes = {
+        customer: "/customer/dashboard",
+        waiter: "/waiter/dashboard",
+        chef: "/chef/dashboard",
+        admin: "/admin/dashboard",
+      };
+
+      navigate(dashboardRoutes[user.role], {
+        replace: true,
+      });
     } catch (error) {
       console.error("Login error:", error);
 
       const message =
         error.response?.data?.message ||
+        error.message ||
         "Login failed. Please try again.";
 
       toast.error(message);
@@ -72,60 +104,82 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
       <div className="w-full max-w-md">
-        {/* Card */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
-          
+        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
           {/* Heading */}
-          <div className="text-center mb-8">
+          <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-gray-900">
               Welcome Back
             </h1>
 
-            <p className="text-gray-500 mt-2">
+            <p className="mt-2 text-gray-500">
               Login to your account
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-5"
+          >
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="login-email"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
                 Email
               </label>
 
               <input
+                id="login-email"
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Enter your email"
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+                autoComplete="email"
+                required
+                disabled={loading}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100 disabled:opacity-60"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="login-password"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
 
               <div className="relative">
                 <input
+                  id="login-password"
                   type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+                  autoComplete="current-password"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-100 disabled:opacity-60"
                 />
 
                 <button
                   type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  onClick={() =>
+                    setShowPassword((prev) => !prev)
+                  }
+                  disabled={loading}
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 disabled:opacity-50"
                 >
                   {showPassword ? (
                     <EyeOff size={20} />
@@ -136,15 +190,18 @@ function Login() {
               </div>
             </div>
 
-            {/* Login Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-3 font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-3 font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? (
                 <>
-                  <Loader2 size={20} className="animate-spin" />
+                  <LoaderCircle
+                    size={20}
+                    className="animate-spin"
+                  />
                   Logging in...
                 </>
               ) : (
@@ -153,8 +210,8 @@ function Login() {
             </button>
           </form>
 
-          {/* Register */}
-          <p className="text-center text-sm text-gray-500 mt-6">
+          {/* Register link */}
+          <p className="mt-6 text-center text-sm text-gray-500">
             Don't have an account?{" "}
             <Link
               to="/register"
@@ -164,7 +221,7 @@ function Login() {
             </Link>
           </p>
 
-          {/* Back Home */}
+          {/* Home link */}
           <Link
             to="/"
             className="mt-5 flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-900"
