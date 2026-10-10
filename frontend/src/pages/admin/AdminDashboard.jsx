@@ -1,5 +1,5 @@
+import { Navigate, useNavigate } from "react-router-dom";
 
-import { Navigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Utensils,
@@ -8,22 +8,24 @@ import {
   Users,
   ClipboardList,
   ChefHat,
-  UserRound,
   Clock,
   ArrowUpRight,
   ShieldCheck,
+  ArrowRight,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+
+import { useAuth } from "../../context/AuthContext";
 
 function AdminDashboard() {
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
-  // Admin authentication check
+  // Authentication check
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Only admin can access this page
+  // Admin-only access
   if (user?.role !== "admin") {
     return <Navigate to="/" replace />;
   }
@@ -32,7 +34,7 @@ function AdminDashboard() {
     {
       title: "Total Menu Items",
       value: "—",
-      description: "Menu API not connected",
+      description: "Menu API connected separately",
       icon: Utensils,
     },
     {
@@ -59,16 +61,19 @@ function AdminDashboard() {
     {
       title: "Menu Management",
       description:
-        "Manage restaurant dishes, prices, images and availability.",
+        "Add new dishes, update prices, upload images and manage availability.",
       icon: Utensils,
-      status: "Next step",
+      status: "Manage Menu",
+      action: () => navigate("/admin/menu"),
+      clickable: true,
     },
     {
       title: "Order Management",
       description:
         "View customer orders and monitor their current status.",
       icon: ClipboardList,
-      status: "Next step",
+      status: "Coming soon",
+      clickable: false,
     },
     {
       title: "Chef & Staff",
@@ -76,6 +81,7 @@ function AdminDashboard() {
         "Manage restaurant staff accounts and their roles.",
       icon: ChefHat,
       status: "Coming soon",
+      clickable: false,
     },
     {
       title: "Customer Feedback",
@@ -83,12 +89,14 @@ function AdminDashboard() {
         "Review customer ratings and restaurant feedback.",
       icon: Users,
       status: "Coming soon",
+      clickable: false,
     },
   ];
 
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+
         {/* Welcome Section */}
         <section className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
@@ -116,6 +124,7 @@ function AdminDashboard() {
               <p className="font-semibold text-gray-900">
                 {user?.name || "Restaurant Admin"}
               </p>
+
               <p className="text-xs text-gray-500">
                 Administrator
               </p>
@@ -129,8 +138,9 @@ function AdminDashboard() {
             <h2 className="text-lg font-bold text-gray-900">
               Restaurant Summary
             </h2>
+
             <p className="mt-1 text-sm text-gray-500">
-              Live statistics will appear after connecting the backend.
+              Dashboard statistics will appear as APIs are connected.
             </p>
           </div>
 
@@ -177,6 +187,7 @@ function AdminDashboard() {
             <h2 className="text-lg font-bold text-gray-900">
               Restaurant Management
             </h2>
+
             <p className="mt-1 text-sm text-gray-500">
               Manage the main operations of your restaurant.
             </p>
@@ -186,11 +197,8 @@ function AdminDashboard() {
             {sections.map((section) => {
               const Icon = section.icon;
 
-              return (
-                <div
-                  key={section.title}
-                  className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md"
-                >
+              const cardContent = (
+                <>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-800">
                       <Icon size={24} />
@@ -208,6 +216,31 @@ function AdminDashboard() {
                   <p className="mt-2 text-sm leading-6 text-gray-500">
                     {section.description}
                   </p>
+
+                  {section.clickable && (
+                    <div className="mt-5 flex items-center gap-2 text-sm font-semibold text-gray-900">
+                      Open Menu Management
+                      <ArrowRight size={17} />
+                    </div>
+                  )}
+                </>
+              );
+
+              return section.clickable ? (
+                <button
+                  key={section.title}
+                  type="button"
+                  onClick={section.action}
+                  className="w-full rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:border-gray-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                >
+                  {cardContent}
+                </button>
+              ) : (
+                <div
+                  key={section.title}
+                  className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+                >
+                  {cardContent}
                 </div>
               );
             })}
@@ -215,6 +248,7 @@ function AdminDashboard() {
         </section>
 
        
+
       </div>
     </main>
   );

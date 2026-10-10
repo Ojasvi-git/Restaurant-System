@@ -1,11 +1,14 @@
 function MenuCard({item}) {
 
     return (
-        <div ClassName="group overflow-hidden rounded-xl border border-gray-200 bg-white transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+        <div className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition duration-300 hover:-translate-y-1 hover:shadow-lg">
          <div className="overflow-hidden">
             <img
                 src={item.image}
                 alt={item.name}
+                onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                }}
                 className="h-52 w-full object-cover transition duration-500 group-hover:scale-105"
             />
          </div>
